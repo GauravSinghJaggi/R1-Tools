@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Tools Dashboard</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:#0f0f13;color:#e8e8f0;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column}
+
+  header{display:flex;align-items:center;gap:8px;padding:12px 20px;background:#17171f;border-bottom:1px solid #2a2a38;flex-wrap:wrap}
+  .brand{font-weight:700;font-size:1.05rem;margin-right:12px;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
+  .tab{font:inherit;font-size:.9rem;padding:8px 14px;border-radius:8px;border:1px solid transparent;background:transparent;color:#8a8aa0;cursor:pointer;transition:all .15s}
+  .tab:hover{background:#23233a;color:#e8e8f0}
+  .tab.active{background:#23233a;border-color:#4a3f7a;color:#a78bfa}
+
+  main{flex:1;position:relative;min-height:0}
+
+  #home{height:100%;overflow:auto;padding:56px 20px;display:flex;flex-direction:column;align-items:center}
+  #home h1{font-size:2rem;letter-spacing:-.5px;margin-bottom:6px;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  #home .sub{color:#6b6b80;margin-bottom:36px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;width:100%;max-width:700px}
+  .card{text-align:left;font:inherit;color:inherit;background:#17171f;border:1px solid #2a2a38;border-radius:16px;padding:26px;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:8px}
+  .card:hover,.card:focus-visible{transform:translateY(-3px);border-color:#4a3f7a;background:#1c1c28;outline:none;box-shadow:0 14px 40px rgba(0,0,0,.4)}
+  .icon{font-size:2rem}
+  .card h2{font-size:1.15rem}
+  .card p{color:#6b6b80;font-size:.9rem;line-height:1.5}
+  .open{margin-top:6px;color:#a78bfa;font-size:.85rem;font-weight:600}
+
+  .tool{position:absolute;inset:0;display:none;background:#0f0f13}
+  .tool.show{display:block}
+  .tool iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand" onclick="show('home')">My Tools</span>
+  <button class="tab" data-tab="home">Dashboard</button>
+  <button class="tab" data-tab="counter">Character Counter</button>
+  <button class="tab" data-tab="patient">Patient ID Grabber</button>
+</header>
+
+<main>
+  <section id="home">
+    <h1>My Tools</h1>
+    <p class="sub">Choose a tool to get started</p>
+    <div class="grid">
+      <button class="card" onclick="show('counter')">
+        <span class="icon">🔢</span>
+        <h2>Character Counter</h2>
+        <p>Paste text and see the character count with spaces. Text over 29 characters is trimmed and ready to copy.</p>
+        <span class="open">Open tool →</span>
+      </button>
+      <button class="card" onclick="show('patient')">
+        <span class="icon">🩺</span>
+        <h2>Patient ID Grabber</h2>
+        <p>Paste a screenshot and the Name, MRN and DOB are read and copied for you.</p>
+        <span class="open">Open tool →</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="tool" id="counter"></section>
+  <section class="tool" id="patient"></section>
+</main>
+
+<script>
+  const TOOLS = {
+    counter: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Character Counter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #0f0f13;
+      color: #e8e8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: #6b6b80;
+      font-size: 0.95rem;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 760px;
+      background: #17171f;
+      border: 1px solid #2a2a38;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: vertical;
+      padding: 24px;
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #e8e8f0;
+      font-family: inherit;
+    }
+
+    textarea::placeholder { color: #3d3d52; }
+
+    .divider { height: 1px; background: #2a2a38; }
+
+    .stats { display: flex; justify-content: center; }
+
+    .stat {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.9rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #a78bfa;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #55556a;
+      font-weight: 600;
+    }
+
+    .clear-btn {
+      display: block;
+      width: calc(100% - 48px);
+      margin: 0 24px 24px;
+      padding: 11px;
+      background: #23233a;
+      border: 1px solid #2a2a38;
+      border-radius: 8px;
+      color: #6b6b80;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.02em;
+    }
+
+    .clear-btn:hover {
+      background: #2d2d48;
+      color: #a78bfa;
+      border-color: #4a3f7a;
+    }
+
+    /* POPUP */
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .popup-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .popup {
+      background: #1e1e2c;
+      border: 1px solid #3a3a50;
+      border-radius: 16px;
+      padding: 28px 32px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      transform: translateY(12px);
+      transition: transform 0.2s;
+      text-align: center;
+    }
+
+    .popup-overlay.show .popup {
+      transform: translateY(0);
+    }
+
+    .popup-icon {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+
+    .popup h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #e8e8f0;
+    }
+
+    .popup p {
+      font-size: 0.88rem;
+      color: #6b6b80;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .popup-shortened {
+      background: #12121a;
+      border: 1px solid #2a2a38;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      color: #a78bfa;
+      font-weight: 600;
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: 0.02em;
+    }
+
+    .copy-btn:hover { opacity: 0.88; }
+
+    .copy-btn.copied {
+      background: linear-gradient(135deg, #34d399, #059669);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Character Counter</h1>
+  <p class="subtitle">Paste or type any text — limited to 29 characters</p>
+
+  <div class="card">
+    <textarea id="input" placeholder="Paste or type your text here…" spellcheck="false" autofocus></textarea>
+    <div class="divider"></div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-value" id="total">0</span>
+        <span class="stat-label">Characters (with spaces)</span>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <button class="clear-btn" onclick="clearText()">Clear text</button>
+  </div>
+
+  <!-- Popup -->
+  <div class="popup-overlay" id="overlay">
+    <div class="popup">
+      <div class="popup-icon">✂️</div>
+      <h2>Text shortened to 29 characters</h2>
+      <p>Your text exceeded the limit. Here's the shortened version — copy it, then the input will reset.</p>
+      <div class="popup-shortened" id="shortenedText"></div>
+      <button class="copy-btn" id="copyBtn" onclick="copyAndReset()">Copy shortened text</button>
+    </div>
+  </div>
+
+  <script>
+    const input       = document.getElementById('input');
+    const total       = document.getElementById('total');
+    const overlay     = document.getElementById('overlay');
+    const shortenedEl = document.getElementById('shortenedText');
+    const copyBtn     = document.getElementById('copyBtn');
+
+    function update() {
+      total.textContent = input.value.length;
+    }
+
+    function clearText() {
+      input.value = '';
+      update();
+      input.focus();
+    }
+
+    function showPopup(shortened) {
+      shortenedEl.textContent = shortened;
+      copyBtn.textContent = 'Copy shortened text';
+      copyBtn.classList.remove('copied');
+      overlay.classList.add('show');
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    function resetAll() {
+      overlay.classList.remove('show');
+      input.value = '';
+      update();
+      input.focus();
+    }
+
+    function copyAndReset() {
+      const text = shortenedEl.textContent;
+      copyBtn.textContent = '✓ Copied!';
+      copyBtn.classList.add('copied');
+
+      try {
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      } catch(e) {
+        fallbackCopy(text);
+      }
+
+      setTimeout(resetAll, 700);
+    }
+
+    input.addEventListener('input', () => {
+      const val = input.value;
+      if (val.length > 29) {
+        const shortened = val.slice(0, 29);
+        input.value = shortened;
+        update();
+        showPopup(shortened);
+      } else {
+        update();
+      }
+    });
+
+    update();
+  <\/script>
+</body>
+</html>
+`,
+    patient: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patient ID Grabber</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"><\/script>
+<style>
+  :root{--bg:#eef3f4;--surface:#fff;--ink:#12292f;--muted:#5a7177;--line:#c9d8db;--accent:#0b6e7f;--accent-ink:#fff;--ok:#1d7a46;--warn:#a65a00}
+  @media (prefers-color-scheme:dark){:root{--bg:#0f1e22;--surface:#162b30;--ink:#e6f1f3;--muted:#8fa9ae;--line:#2b464c;--accent:#4fc3d6;--accent-ink:#06242a;--ok:#5fd18b;--warn:#f0b35a}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif;min-height:100vh}
+  main{max-width:720px;margin:0 auto;padding:28px 18px 48px}
+  h1{font-size:1.6rem;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 20px}
+  #drop{border:2px dashed var(--line);border-radius:10px;background:var(--surface);padding:28px 16px;text-align:center;outline:none}
+  #drop:focus,#drop.hot{border-color:var(--accent)}
+  #drop strong{display:block;font-size:1.1rem;margin-bottom:4px}
+  #drop span{color:var(--muted)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:center}
+  button{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  #status{margin:16px 0 0;min-height:1.5em;color:var(--muted)}
+  #status.ok{color:var(--ok);font-weight:600}
+  #status.warn{color:var(--warn);font-weight:600}
+  #bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;display:none}
+  #bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+  #result{display:none;margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .field{display:grid;grid-template-columns:60px 1fr auto;gap:8px;align-items:center;margin-bottom:10px}
+  .field label{color:var(--muted)}
+  .field input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%}
+  .field input.miss{border-color:var(--warn)}
+  .fmt{display:flex;gap:8px;align-items:center;margin:14px 0 10px;color:var(--muted);flex-wrap:wrap}
+  .fmt select{font:inherit;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+  #preview{display:none;max-width:100%;max-height:220px;margin-top:16px;border:1px solid var(--line);border-radius:8px}
+  details{margin-top:16px;color:var(--muted)}
+  pre{white-space:pre-wrap;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.85rem;max-height:200px;overflow:auto;color:var(--ink)}
+  .note{margin-top:22px;font-size:.88rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Patient ID Grabber</h1>
+  <p class="sub">Take a screenshot, then press Ctrl+V on this page. MRN, name and date of birth are read from the image and copied for you.</p>
+
+  <div id="drop" tabindex="0" aria-label="Paste a screenshot here">
+    <strong>Press Ctrl+V (or Cmd+V) to paste a screenshot</strong>
+    <span>You can also drop an image file here</span>
+    <div class="row">
+      <button class="primary" id="pasteBtn" type="button">Paste from clipboard</button>
+      <button id="fileBtn" type="button">Choose image</button>
+      <input id="file" type="file" accept="image/*" hidden>
+    </div>
+  </div>
+
+  <p id="status" role="status"></p>
+  <div id="bar"><i></i></div>
+
+  <section id="result">
+    <div class="field"><label for="name">Name</label><input id="name"><button type="button" data-copy="name">Copy</button></div>
+    <div class="field"><label for="mrn">MRN</label><input id="mrn"><button type="button" data-copy="mrn">Copy</button></div>
+    <div class="field"><label for="dob">DOB</label><input id="dob"><button type="button" data-copy="dob">Copy</button></div>
+    <div class="fmt">
+      <label for="fmt">Auto-copy format</label>
+      <select id="fmt">
+        <option value="labels">Name: …  MRN: …  DOB: … (3 lines)</option>
+        <option value="tab">Tab-separated (Name, MRN, DOB)</option>
+        <option value="comma">Comma-separated</option>
+        <option value="mrn">MRN only</option>
+      </select>
+      <button type="button" class="primary" id="copyAll">Copy again</button>
+    </div>
+  </section>
+
+  <img id="preview" alt="Pasted screenshot">
+  <details><summary>Text the OCR read</summary><pre id="raw"></pre></details>
+
+  <p class="note">Everything runs in your browser. The screenshot is never uploaded. The OCR engine loads once from a public CDN, so the first scan needs internet; later scans are quick. Always check the three fields against the screen before using them.</p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const statusEl = $('status'), bar = $('bar'), barFill = bar.firstElementChild;
+let worker = null, busy = false;
+
+function setStatus(msg, cls){ statusEl.textContent = msg; statusEl.className = cls || ''; }
+
+async function getWorker(){
+  if (worker) return worker;
+  worker = await Tesseract.createWorker('eng', 1, {
+    logger: m => {
+      if (m.status === 'recognizing text') barFill.style.width = Math.round(m.progress*100)+'%';
+    }
+  });
+  return worker;
+}
+
+/* Upscale small screenshots: OCR is noticeably more accurate on larger text */
+function prepare(blob){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const scale = img.width < 1800 ? 2 : 1;
+      const c = document.createElement('canvas');
+      c.width = img.width*scale; c.height = img.height*scale;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      $('preview').src = url; $('preview').style.display = 'block';
+      c.toBlob(b => b ? resolve(b) : reject(new Error('Image error')), 'image/png');
+    };
+    img.onerror = () => reject(new Error('Could not read that image'));
+    img.src = url;
+  });
+}
+
+function clean(s){ return (s||'').replace(/[|_]+/g,' ').replace(/\\s+/g,' ').trim(); }
+
+function parse(text){
+  const lines = text.split(/\\r?\\n/).map(l => l.trim()).filter(Boolean);
+  const flat = text.replace(/\\r?\\n/g,'  ');
+  let mrn = '', dob = '', name = '';
+
+  // MRN: label followed by a code (letters/digits/dashes). Fix common O/0 slips only if digits dominate.
+  let m = flat.match(/\\b(?:MRN|M\\.?R\\.?N\\.?|Med(?:ical)?\\s*Rec(?:ord)?\\s*(?:No|Number|#)?)\\s*[:#\\-]?\\s*([A-Za-z0-9][A-Za-z0-9\\-]{3,})/i);
+  if (m) mrn = m[1];
+
+  // DOB: label then a date like 01/02/1980, 1-2-80, 01.02.1980, or "Jan 2, 1980"
+  const dateRe = '(\\\\d{1,2}\\\\s*[\\\\/\\\\-.]\\\\s*\\\\d{1,2}\\\\s*[\\\\/\\\\-.]\\\\s*\\\\d{2,4}|\\\\d{4}\\\\s*[\\\\/\\\\-.]\\\\s*\\\\d{1,2}\\\\s*[\\\\/\\\\-.]\\\\s*\\\\d{1,2}|[A-Za-z]{3,9}\\\\.?\\\\s+\\\\d{1,2},?\\\\s+\\\\d{4}|\\\\d{1,2}\\\\s+[A-Za-z]{3,9}\\\\.?,?\\\\s+\\\\d{4})';
+  m = flat.match(new RegExp('(?:DOB|D\\\\.O\\\\.B\\\\.?|Date\\\\s*of\\\\s*Birth|Birth\\\\s*Date|Birthdate)\\\\s*[:#\\\\-]?\\\\s*' + dateRe, 'i'));
+  if (m) dob = m[1].replace(/\\s*([\\/\\-.])\\s*/g,'$1');
+
+  // Name: labelled line first; else "Last, First" line near the top
+  for (const l of lines){
+    const nm = l.match(/^(?:Patient\\s*)?Name\\s*[:\\-]?\\s*(.+)$/i) || l.match(/\\bPatient\\s*[:\\-]\\s*(.+)$/i);
+    if (nm){
+      let v = nm[1].split(/\\s{2,}|\\b(?:MRN|DOB|Date of Birth|Age|Sex|Gender|DOS|Visit|Acct|Account)\\b/i)[0];
+      v = clean(v.replace(/[^A-Za-z ,.'\\-]/g,' '));
+      if (v.length > 2){ name = v; break; }
+    }
+  }
+  if (!name){
+    m = flat.match(/\\b([A-Z][A-Za-z'\\-]+,\\s*[A-Z][A-Za-z'\\-]+(?:\\s+[A-Z][A-Za-z'\\-]*\\.?)?)/);
+    if (m) name = m[1];
+  }
+  return { name: clean(name), mrn: mrn.trim(), dob: dob.trim() };
+}
+
+function formatted(){
+  const n = $('name').value.trim(), r = $('mrn').value.trim(), d = $('dob').value.trim();
+  switch ($('fmt').value){
+    case 'tab':   return [n,r,d].join('\\t');
+    case 'comma': return [n,r,d].join(', ');
+    case 'mrn':   return r;
+    default:      return 'Name: '+n+'\\nMRN: '+r+'\\nDOB: '+d;
+  }
+}
+
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(_){}
+    ta.remove(); return ok;
+  }
+}
+
+async function copyAll(auto){
+  const ok = await copyText(formatted());
+  if (ok) setStatus('Copied to clipboard. Paste it where you need it.', 'ok');
+  else setStatus('Could not copy automatically. Press "Copy again".', 'warn');
+}
+
+async function handleBlob(blob){
+  if (busy) return;
+  busy = true;
+  $('result').style.display = 'none';
+  bar.style.display = 'block'; barFill.style.width = '0';
+  try {
+    setStatus('Reading screenshot…');
+    const img = await prepare(blob);
+    setStatus(worker ? 'Reading text…' : 'Loading OCR engine (first time only)…');
+    const w = await getWorker();
+    setStatus('Reading text…');
+    const { data } = await w.recognize(img);
+    $('raw').textContent = data.text;
+    const f = parse(data.text);
+    $('name').value = f.name; $('mrn').value = f.mrn; $('dob').value = f.dob;
+    ['name','mrn','dob'].forEach(k => $(k).classList.toggle('miss', !f[k]));
+    $('result').style.display = 'block';
+    const missing = ['name','mrn','dob'].filter(k => !f[k]);
+    if (missing.length === 3){
+      setStatus('Found no Name, MRN or DOB. Check the "Text the OCR read" box below, or try a tighter screenshot.', 'warn');
+    } else {
+      await copyAll(true);
+      if (missing.length) setStatus(statusEl.textContent + ' Missing: ' + missing.map(s=>s.toUpperCase()).join(', ') + '. Type it in and press "Copy again".', 'warn');
+    }
+  } catch(err){
+    setStatus('Something went wrong: ' + err.message + '. Check your internet connection for the first scan.', 'warn');
+  } finally {
+    bar.style.display = 'none'; busy = false;
+  }
+}
+
+/* Ctrl+V anywhere on the page */
+document.addEventListener('paste', e => {
+  if (e.target.matches('input,textarea')) return;
+  const items = e.clipboardData ? [...e.clipboardData.items] : [];
+  const it = items.find(i => i.type.startsWith('image/'));
+  if (it){ e.preventDefault(); handleBlob(it.getAsFile()); }
+  else setStatus('No image on the clipboard. Take a screenshot first, then paste.', 'warn');
+});
+
+/* Button: read clipboard directly */
+$('pasteBtn').onclick = async () => {
+  try {
+    const clip = await navigator.clipboard.read();
+    for (const item of clip){
+      const type = item.types.find(t => t.startsWith('image/'));
+      if (type){ return handleBlob(await item.getType(type)); }
+    }
+    setStatus('No image on the clipboard. Take a screenshot first.', 'warn');
+  } catch(e){ setStatus('Browser blocked clipboard access. Click the box and press Ctrl+V instead.', 'warn'); }
+};
+
+/* File picker and drag-drop */
+$('fileBtn').onclick = () => $('file').click();
+$('file').onchange = e => { if (e.target.files[0]) handleBlob(e.target.files[0]); e.target.value=''; };
+const drop = $('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('hot'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('hot'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('hot');
+  const f = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
+  if (f) handleBlob(f);
+});
+
+document.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
+  const ok = await copyText($(b.dataset.copy).value);
+  setStatus(ok ? b.dataset.copy.toUpperCase() + ' copied.' : 'Could not copy.', ok ? 'ok' : 'warn');
+});
+$('copyAll').onclick = () => copyAll(false);
+$('fmt').onchange = () => { try{localStorage.setItem('pig-fmt', $('fmt').value);}catch(e){} };
+try { const s = localStorage.getItem('pig-fmt'); if (s) $('fmt').value = s; } catch(e){}
+drop.focus();
+<\/script>
+</body>
+</html>
+`
+  };
+  const loaded = {};
+
+  function load(id){
+    if (loaded[id]) return;
+    const f = document.createElement('iframe');
+    f.title = id;
+    f.setAttribute('allow', 'clipboard-read; clipboard-write');
+    f.srcdoc = TOOLS[id];
+    document.getElementById(id).appendChild(f);
+    loaded[id] = f;
+  }
+
+  function show(id){
+    document.getElementById('home').style.display = id === 'home' ? 'flex' : 'none';
+    ['counter','patient'].forEach(t => document.getElementById(t).classList.toggle('show', t === id));
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    if (id !== 'home'){
+      load(id);
+      setTimeout(() => { try { loaded[id].focus(); loaded[id].contentWindow.focus(); } catch(e){} }, 60);
+    }
+    try { history.replaceState(null, '', id === 'home' ? location.pathname : '#' + id); } catch(e){}
+  }
+
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => show(b.dataset.tab));
+  const start = (location.hash || '').slice(1);
+  show(TOOLS[start] ? start : 'home');
+</script>
+</body>
+</html>
