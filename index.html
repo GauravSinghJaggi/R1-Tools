@@ -558,4 +558,103 @@ async function handleBlob(blob){
     const w = await getWorker();
     setStatus('Reading text…');
     const { data } = await w.recognize(img);
-    $('raw').textContent
+    $('raw').textContent = data.text;
+    const f = parse(data.text);
+    $('name').value = f.name; $('mrn').value = f.mrn; $('dob').value = f.dob;
+    ['name','mrn','dob'].forEach(k => $(k).classList.toggle('miss', !f[k]));
+    $('result').style.display = 'block';
+    const missing = ['name','mrn','dob'].filter(k => !f[k]);
+    if (missing.length === 3){
+      setStatus('Found no Name, MRN or DOB. Check the "Text the OCR read" box below, or try a tighter screenshot.', 'warn');
+    } else {
+      await copyAll(true);
+      if (missing.length) setStatus(statusEl.textContent + ' Missing: ' + missing.map(s=>s.toUpperCase()).join(', ') + '. Type it in and press "Copy again".', 'warn');
+    }
+  } catch(err){
+    setStatus('Something went wrong: ' + err.message + '. Check your internet connection for the first scan.', 'warn');
+  } finally {
+    bar.style.display = 'none'; busy = false;
+  }
+}
+
+/* Ctrl+V anywhere on the page */
+document.addEventListener('paste', e => {
+  if (e.target.matches('input,textarea')) return;
+  const items = e.clipboardData ? [...e.clipboardData.items] : [];
+  const it = items.find(i => i.type.startsWith('image/'));
+  if (it){ e.preventDefault(); handleBlob(it.getAsFile()); }
+  else setStatus('No image on the clipboard. Take a screenshot first, then paste.', 'warn');
+});
+
+/* Button: read clipboard directly */
+$('pasteBtn').onclick = async () => {
+  try {
+    const clip = await navigator.clipboard.read();
+    for (const item of clip){
+      const type = item.types.find(t => t.startsWith('image/'));
+      if (type){ return handleBlob(await item.getType(type)); }
+    }
+    setStatus('No image on the clipboard. Take a screenshot first.', 'warn');
+  } catch(e){ setStatus('Browser blocked clipboard access. Click the box and press Ctrl+V instead.', 'warn'); }
+};
+
+/* File picker and drag-drop */
+$('fileBtn').onclick = () => $('file').click();
+$('file').onchange = e => { if (e.target.files[0]) handleBlob(e.target.files[0]); e.target.value=''; };
+const drop = $('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('hot'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('hot'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('hot');
+  const f = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
+  if (f) handleBlob(f);
+});
+
+document.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
+  const ok = await copyText($(b.dataset.copy).value);
+  setStatus(ok ? b.dataset.copy.toUpperCase() + ' copied.' : 'Could not copy.', ok ? 'ok' : 'warn');
+});
+$('copyAll').onclick = () => copyAll(false);
+$('fmt').onchange = () => { try{localStorage.setItem('pig-fmt', $('fmt').value);}catch(e){} };
+try { const s = localStorage.getItem('pig-fmt'); if (s) $('fmt').value = s; } catch(e){}
+drop.focus();
+<\/script>
+</body>
+</html>
+`
+  };
+  const loaded = {};
+  const SLUGS = { 'character-counter': 'counter', 'patient-id-grabber': 'patient' };
+  const SLUG_OF = { counter: 'character-counter', patient: 'patient-id-grabber' };
+
+  function load(id){
+    if (loaded[id]) return;
+    const f = document.createElement('iframe');
+    f.title = id;
+    f.setAttribute('allow', 'clipboard-read; clipboard-write');
+    f.srcdoc = TOOLS[id];
+    document.getElementById(id).appendChild(f);
+    loaded[id] = f;
+  }
+
+  function show(id){
+    document.getElementById('home').style.display = id === 'home' ? 'flex' : 'none';
+    ['counter','patient'].forEach(t => document.getElementById(t).classList.toggle('show', t === id));
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    if (id !== 'home'){
+      load(id);
+      setTimeout(() => { try { loaded[id].focus(); loaded[id].contentWindow.focus(); } catch(e){} }, 60);
+    }
+    try { history.replaceState(null, '', id === 'home' ? location.pathname + location.search : '#' + SLUG_OF[id]); } catch(e){}
+  }
+
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => show(b.dataset.tab));
+  function route(){
+    const slug = (location.hash || '').slice(1);
+    show(SLUGS[slug] || 'home');
+  }
+  window.addEventListener('hashchange', route);
+  route();
+</script>
+</body>
+</html>
